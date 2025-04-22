@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Symptom Checker Chatbot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            fitness: {
+              light: '#f8fafc',
+              dark: '#1e293b',
+              primary: '#3b82f6',
+              accent: '#10b981',
+              secondary: '#f59e0b'
+            }
+          },
+          backgroundImage: {
+            'fitness-light': "url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=2940&auto=format&fit=crop')",
+            'fitness-dark': "url('https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=2940&auto=format&fit=crop')"
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .dark .fitness-bg {
+      background-color: rgba(30, 41, 59, 0.9);
+    }
+    .light .fitness-bg {
+      background-color: rgba(248, 250, 252, 0.9);
+    }
+    .chat-bubble-user {
+      border-bottom-right-radius: 0;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+    }
+    .chat-bubble-bot {
+      border-bottom-left-radius: 0;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+    }
+    .sidebar-bg {
+      background: linear-gradient(180deg, #1e293b, #0f172a);
+    }
+    .history-item {
+      transition: all 0.2s;
+    }
+    .history-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+  </style>
+</head>
+<body class="h-screen fitness-bg text-gray-800 dark:text-gray-200 font-sans">
+  <div class="flex h-full">
+    <!-- Toggle Sidebar Button -->
+    <button id="toggle-sidebar" class="absolute top-4 left-4 z-20 bg-fitness-accent text-white p-3 rounded-full md:hidden shadow-lg hover:bg-emerald-600 transition-all">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed top-0 left-0 w-64 h-full sidebar-bg text-white p-4 transform -translate-x-full md:translate-x-0 transition-transform duration-300 z-10 shadow-xl">
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center space-x-3">
+          <div class="bg-fitness-accent p-2 rounded-lg">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold bg-gradient-to-r from-fitness-accent to-fitness-secondary bg-clip-text text-transparent">FitGPT</h1>
+        </div>
+        <button id="hide-sidebar" class="text-gray-300 hover:text-white text-2xl md:hidden transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="mb-6 p-4 bg-gray-800 rounded-lg">
+        <p class="text-sm text-gray-300">Your AI Symptom Checker Chatbot Based on medical Prediction.</p>
+      </div>
+      
+      <button id="theme-toggle" class="w-full flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-lg transition-all shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+        Toggle Theme
+      </button>
+      
+      <!-- History Section -->
+      <div class="mt-8">
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="text-sm uppercase font-semibold text-gray-400">Chat History</h3>
+          <button id="clear-history" class="text-xs text-gray-400 hover:text-white transition-colors" title="Clear History">
+            Clear All
+          </button>
+        </div>
+        <div id="history-list" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+          <!-- History items will be added here dynamically -->
+        </div>
+      </div>
+      
+      <div class="mt-8">
+        <h3 class="text-sm uppercase font-semibold text-gray-400 mb-3">Quick Prompts</h3>
+        <div class="space-y-2">
+          <button class="quick-prompt w-full text-left px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+            Create a 30-minute HIIT workout
+          </button>
+          <button class="quick-prompt w-full text-left px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+            Suggest a high-protein meal plan
+          </button>
+          <button class="quick-prompt w-full text-left px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors">
+            How can I improve my squat form?
+          </button>
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main Chat Area -->
+    <main class="flex flex-col flex-1 transition-all duration-300 md:ml-64 h-screen">
+      <!-- Chat Header -->
+      <div class="bg-white dark:bg-gray-800/80 backdrop-blur-sm p-4 border-b dark:border-gray-700 shadow-sm">
+        <div class="max-w-3xl mx-auto flex items-center justify-between">
+          <h2 class="text-xl font-bold flex items-center gap-2">
+            <span class="bg-fitness-accent text-white p-1 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+           Welcome! AI Symptom Checker Chatbot
+          </h2>
+          <div class="text-sm text-gray-500 dark:text-gray-400">
+            <span id="current-time" class="font-medium"></span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat Body -->
+      <div id="chat-body" class="flex-1 p-6 overflow-y-auto space-y-4 mb-28">
+        <!-- Welcome Message -->
+        <div class="flex flex-col items-center justify-center h-full text-center py-12 px-4">
+          <div class="bg-fitness-accent/10 p-4 rounded-full mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-fitness-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Welcome to AI Symptom Checker Chatbot</h2>
+          <p class="text-gray-600 dark:text-gray-300 max-w-md">Your AI Symptom Checker Chatbot. Ask me anything about Medical Condition Prediction, any other.</p>
+        </div>
+      </div>
+    
+      <!-- Chat Input Area -->
+      <div class="fixed bottom-0 left-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-t dark:border-gray-700 px-4 py-3 z-50">
+        <div class="max-w-3xl mx-auto flex items-center gap-3">
+          <input 
+            type="text" 
+            id="input-box" 
+            placeholder="Ask about workouts, nutrition..." 
+            class="flex-1 px-4 py-3 rounded-full border border-gray-200 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-fitness-accent dark:bg-gray-700/50 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 shadow-sm" 
+          />
+          <button 
+            onclick="startVoice()" 
+            class="bg-fitness-accent hover:bg-emerald-600 text-white p-3 rounded-full transition duration-200 shadow-md hover:shadow-lg"
+            title="Voice Input"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </button>
+          <button 
+            id="send-btn" 
+            class="bg-fitness-primary hover:bg-blue-700 text-white px-5 py-3 rounded-full transition duration-200 shadow-md hover:shadow-lg flex items-center gap-1"
+          >
+            Send
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+  
+  <!-- Chat Logic -->
+  <script>
+
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const API_KEY = ''; // Replace with your actual API key 
+  
+
+
+    const inputBox = document.getElementById('input-box');
+    const sendBtn = document.getElementById('send-btn');
+    const chatBody = document.getElementById('chat-body');
+    const toggleSidebar = document.getElementById('toggle-sidebar');
+    const hideSidebar = document.getElementById('hide-sidebar');
+    const sidebar = document.getElementById('sidebar');
+    const themeToggle = document.getElementById('theme-toggle');
+    const currentTime = document.getElementById('current-time');
+    const historyList = document.getElementById('history-list');
+    const clearHistoryBtn = document.getElementById('clear-history');
+    
+    // Chat history array to store conversations
+    let chatHistory = JSON.parse(localStorage.getItem('chatHistory')) || [];
+    let currentChatId = null;
+    
+    // Initialize the app
+    function init() {
+      updateTime();
+      renderHistory();
+      
+      // Check for saved theme preference
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.documentElement.classList.add('dark');
+      }
+      
+      // Start a new chat if there's no active chat
+      if (!currentChatId) {
+        startNewChat();
+      }
+    }
+    
+    // Update current time
+    function updateTime() {
+      const now = new Date();
+      currentTime.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    setInterval(updateTime, 1000);
+    
+    // Toggle sidebar for mobile
+    toggleSidebar.addEventListener('click', () => {
+      sidebar.classList.toggle('-translate-x-full');
+    });
+    
+    hideSidebar.addEventListener('click', () => {
+      sidebar.classList.add('-translate-x-full');
+    });
+    
+    // Toggle dark mode
+    themeToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+    });
+    
+    // Quick prompt buttons
+    document.querySelectorAll('.quick-prompt').forEach(button => {
+      button.addEventListener('click', () => {
+        inputBox.value = button.textContent;
+        sendMessage();
+      });
+    });
+  
+    // Format message (bold and line breaks)
+    function formatMessage(message) {
+      return message
+        .replace(/\*\*\s*(.*?)\s*\*\*/g, '<b>$1</b>')
+        .replace(/(^|\s)\*\s*(\S.*?)(?=\s|$)/g, '$1<b>$2</b>')
+        .replace(/\n/g, '<br>');
+    }
+  
+    // Add message to chat area
+    function addMessage(text, sender = 'user') {
+      // Remove welcome message if it's the first user message
+      if (sender === 'user' && chatBody.children.length === 1 && chatBody.children[0].querySelector('h2')) {
+        chatBody.innerHTML = '';
+      }
+      
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `p-4 max-w-lg rounded-2xl shadow-md ${sender === 'user' ? 'chat-bubble-user self-end' : 'chat-bubble-bot self-start'} whitespace-pre-wrap`;
+      messageDiv.innerHTML = formatMessage(text);
+  
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col';
+      wrapper.appendChild(messageDiv);
+  
+      chatBody.appendChild(wrapper);
+      chatBody.scrollTop = chatBody.scrollHeight;
+      
+      // Update chat history
+      if (sender === 'user') {
+        const currentChat = chatHistory.find(chat => chat.id === currentChatId);
+        if (currentChat) {
+          currentChat.messages.push({ text, sender });
+          currentChat.lastMessage = text;
+          currentChat.timestamp = new Date().toISOString();
+          saveHistory();
+          renderHistory();
+        }
+      } else if (sender === 'bot') {
+        const currentChat = chatHistory.find(chat => chat.id === currentChatId);
+        if (currentChat) {
+          currentChat.messages.push({ text, sender });
+          saveHistory();
+        }
+      }
+    }
+  
+    // Show "Thinking..." loader
+    let loadingDiv;
+    function showLoading() {
+      loadingDiv = document.createElement('div');
+      loadingDiv.className = 'p-4 max-w-lg rounded-2xl shadow bg-gray-300 dark:bg-gray-600 self-start flex items-center gap-2 italic';
+      loadingDiv.innerHTML = `
+        <div class="flex space-x-2">
+          <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
+          <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+          <div class="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+        </div>
+        <span>Thinking...</span>
+      `;
+  
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex flex-col loading-indicator';
+      wrapper.appendChild(loadingDiv);
+      chatBody.appendChild(wrapper);
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }
+  
+    function removeLoading() {
+      const loading = document.querySelector('.loading-indicator');
+      if (loading) loading.remove();
+    }
+  
+    // Send message to Gemini
+    async function sendMessageToGemini(message) {
+      showLoading();
+  
+      try {
+        const response = await fetch(`${API_URL}?key=${API_KEY}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: message }] }]
+          })
+        });
+  
+        const data = await response.json();
+        removeLoading();
+  
+        const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not process your request. Please try again.';
+        addMessage(reply, 'bot');
+      } catch (error) {
+        removeLoading();
+        addMessage('Error: Unable to reach the server. Please check your connection.', 'bot');
+        console.error(error);
+      }
+    }
+  
+    // Unified send message logic
+    function sendMessage() {
+      const userInput = inputBox.value.trim();
+      if (!userInput) return;
+  
+      addMessage(userInput, 'user');
+      inputBox.value = '';
+      sendMessageToGemini(userInput);
+    }
+  
+    // Send on button click
+    sendBtn.addEventListener('click', sendMessage);
+  
+    // Send on Enter key
+    inputBox.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  
+    // Start voice recognition and auto-send
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+  
+      recognition.start();
+  
+      recognition.onstart = () => {
+        inputBox.placeholder = 'Listening...';
+      };
+  
+      recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        inputBox.value = transcript;
+        inputBox.placeholder = 'Ask about workouts, nutrition...';
+        sendMessage(); // Auto-send after voice input
+      };
+  
+      recognition.onerror = () => {
+        inputBox.placeholder = 'Voice input failed';
+      };
+  
+      recognition.onend = () => {
+        inputBox.placeholder = 'Ask about workouts, nutrition...';
+      };
+    }
+    
+    // History functions
+    function saveHistory() {
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    }
+    
+    function renderHistory() {
+      historyList.innerHTML = '';
+      
+      if (chatHistory.length === 0) {
+        historyList.innerHTML = '<p class="text-gray-400 text-sm italic">No chat history yet</p>';
+        return;
+      }
+      
+      // Sort by most recent first
+      const sortedHistory = [...chatHistory].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+      );
+      
+      sortedHistory.forEach(chat => {
+        const historyItem = document.createElement('div');
+        historyItem.className = `history-item p-2 rounded-lg cursor-pointer flex justify-between items-center ${chat.id === currentChatId ? 'bg-gray-700' : 'bg-gray-800 hover:bg-gray-700'}`;
+        historyItem.innerHTML = `
+          <div class="truncate flex-1">${chat.lastMessage || 'New Chat'}</div>
+          <div class="text-xs text-gray-400 ml-2 whitespace-nowrap">${formatHistoryDate(chat.timestamp)}</div>
+        `;
+        
+        historyItem.addEventListener('click', () => loadChat(chat.id));
+        historyList.appendChild(historyItem);
+      });
+    }
+    
+    function formatHistoryDate(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      
+      if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      }
+    }
+    
+    function startNewChat() {
+      currentChatId = Date.now().toString();
+      chatHistory.unshift({
+        id: currentChatId,
+        messages: [],
+        lastMessage: '',
+        timestamp: new Date().toISOString()
+      });
+      saveHistory();
+      renderHistory();
+      chatBody.innerHTML = '';
+      
+      // Add welcome message to new chat
+      const welcomeDiv = document.createElement('div');
+      welcomeDiv.className = 'flex flex-col items-center justify-center h-full text-center py-12 px-4';
+      welcomeDiv.innerHTML = `
+        <div class="bg-fitness-accent/10 p-4 rounded-full mb-6">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-fitness-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Welcome to AI Symptom Checker Chatbot</h2>
+        <p class="text-gray-600 dark:text-gray-300 max-w-md">Your AI Symptom Checker Chatbot. Ask me anything about Medical Condition Prediction, any other.</p>
+      `;
+      
+      chatBody.appendChild(welcomeDiv);
+    }
+    
+    function loadChat(chatId) {
+      const chat = chatHistory.find(c => c.id === chatId);
+      if (!chat) return;
+      
+      currentChatId = chatId;
+      renderHistory();
+      
+      // Clear chat and reload messages
+      chatBody.innerHTML = '';
+      
+      if (chat.messages.length === 0) {
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'flex flex-col items-center justify-center h-full text-center py-12 px-4';
+        welcomeDiv.innerHTML = `
+          <div class="bg-fitness-accent/10 p-4 rounded-full mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-fitness-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Welcome to AI Symptom Checker Chatbot</h2>
+          <p class="text-gray-600 dark:text-gray-300 max-w-md">Your AI Symptom Checker Chatbot. Ask me anything about Medical Condition Prediction, any other.</p>
+        `;
+        chatBody.appendChild(welcomeDiv);
+      } else {
+        chat.messages.forEach(msg => {
+          addMessage(msg.text, msg.sender);
+        });
+      }
+    }
+    
+    // Clear all history
+    clearHistoryBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear all chat history?')) {
+        chatHistory = [];
+        saveHistory();
+        startNewChat();
+        renderHistory();
+      }
+    });
+    
+    // New chat button (if you want to add one)
+    // You can add a "New Chat" button in the sidebar and call startNewChat() when clicked
+    
+    // Initialize the app
+    init();
+  </script>
+</body>
+</html>
