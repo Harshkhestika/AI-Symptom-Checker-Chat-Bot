@@ -11,7 +11,7 @@ An intelligent web-based AI Symptom Checker Chatbot built using **HTML, Tailwind
 * 🌙 Dark Mode / Light Mode support
 * 📱 Fully responsive design
 * 📝 Chat history stored in Local Storage
-* ⚡ Real-time AI responses
+* ⚡ Real-time AI responses 
 * 📚 Previous conversation management
 * 🎨 Modern Tailwind CSS user interface
 * 🔄 New Chat and History Management
